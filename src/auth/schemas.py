@@ -38,7 +38,7 @@ class UserInDBBase(BaseModel):
     first_name: str
     last_name: str
     username: str
-    email: str
+    email: str | None = None
     role: str
 
     class Config:

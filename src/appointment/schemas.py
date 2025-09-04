@@ -11,9 +11,10 @@ class AppointmentBase(BaseModel):
         from_attributes = True
 
 class AppointmentCreate(AppointmentBase):
-    """Schema for creating a slot. Doctor ID is taken from the token."""
+    """Schema for creating a slot. Doctor ID is taken from the token unless provided by ASHA."""
     appointment_date: datetime.date
     appointment_time: datetime.time
+    doctor_profile_id: int | None = None
 
 class AppointmentUpdate(AppointmentBase):
     """Schema for updating an appointment's status."""

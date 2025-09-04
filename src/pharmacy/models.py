@@ -8,9 +8,11 @@ class Pharmacy(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     location = Column(String)
-    # This links the pharmacy to a user who is a pharmacist
-    pharmacist_id = Column(Integer, ForeignKey("users.id"))
+    pharmacist_id = Column(Integer, ForeignKey("pharmacists.pharmacist_id"))
 
+    # Add back_populates and lazy="joined"
+    pharmacist = relationship("Pharmacist", back_populates="pharmacy", lazy="joined")
+    medicines = relationship("Medicine", back_populates="pharmacy")
 
 class Medicine(Base):
     __tablename__ = "medicines"
@@ -18,5 +20,7 @@ class Medicine(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     quantity = Column(Integer)
-    # This links the medicine to a specific pharmacy
     pharmacy_id = Column(Integer, ForeignKey("pharmacies.id"))
+
+    # Add back_populates
+    pharmacy = relationship("Pharmacy", back_populates="medicines")

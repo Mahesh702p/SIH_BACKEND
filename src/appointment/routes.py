@@ -20,13 +20,14 @@ router = APIRouter()
 def create_appointment_slot(
     appointment_in: schemas.AppointmentCreate,
     db: Session = Depends(db.get_db),
-    current_user: auth_models.User = Depends(role_checker(allowed_roles=["doctor"]))
+    current_user: auth_models.User = Depends(role_checker(allowed_roles=["doctor", "asha_worker"]))
 ):
     """
     Creates a new, available appointment slot.
 
-    - **Security**: This endpoint is protected and only accessible by users with the 'doctor' role.
-    - The `doctor_id` is automatically assigned based on the logged-in doctor's token.
+    - **Security**: Doctors and ASHA workers can create slots.
+    - The `doctor_id` is automatically assigned from the token for doctors.
+    - ASHA workers may optionally provide a `doctor_profile_id`; if omitted, this will error.
     - The request body should contain the desired date and time for the slot.
     """
     appointment_datetime = datetime.datetime.combine(
@@ -34,9 +35,21 @@ def create_appointment_slot(
         appointment_in.appointment_time
     )
 
+    if current_user.role == "doctor":
+        doctor_profile = current_user.doctor_profile
+    else:
+        # ASHA worker must specify which doctor the slot is for
+        if not appointment_in.doctor_profile_id:
+            raise HTTPException(status_code=400, detail="doctor_profile_id is required for ASHA worker")
+        doctor_profile = db.query(profile_models.Doctor).filter(
+            profile_models.Doctor.doctor_id == appointment_in.doctor_profile_id
+        ).first()
+        if not doctor_profile:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+
     new_appointment = appointment_models.Appointment(
         appointment_datetime=appointment_datetime,
-        doctor=current_user.doctor_profile
+        doctor=doctor_profile
     )
     db.add(new_appointment)
     db.commit()
