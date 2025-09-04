@@ -4,38 +4,33 @@ from ..db import Base
 
 class Patient(Base):
     __tablename__ = "patients"
-    id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String)
-    date_of_birth = Column(Date)
+    patient_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("User", back_populates="patient_profile")
     
-    # Add this relationship to link to appointments
-    appointments = relationship("Appointment", back_populates="patient")
+    user = relationship("User", back_populates="patient_profile", foreign_keys=[user_id])
+    appointments = relationship("Appointment", back_populates="patient", foreign_keys="[Appointment.patient_profile_id]")
 
 class Doctor(Base):
     __tablename__ = "doctors"
-    id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String)
+    doctor_id = Column(Integer, primary_key=True, index=True)
     specialization = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("User", back_populates="doctor_profile")
-
-    # Add this relationship to link to appointments
-    appointments = relationship("Appointment", back_populates="doctor")
+    
+    user = relationship("User", back_populates="doctor_profile", foreign_keys=[user_id])
+    appointments = relationship("Appointment", back_populates="doctor", foreign_keys="[Appointment.doctor_profile_id]")
 
 class Pharmacist(Base):
     __tablename__ = "pharmacists"
-    id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String)
+    pharmacist_id = Column(Integer, primary_key=True, index=True)
     pharmacy_name = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("User", back_populates="pharmacist_profile")
+
+    user = relationship("User", back_populates="pharmacist_profile", foreign_keys=[user_id])
 
 class ASHAWorker(Base):
     __tablename__ = "asha_workers"
-    id = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String)
+    asha_worker_id = Column(Integer, primary_key=True, index=True)
     village_assigned = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("User", back_populates="asha_worker_profile")
+
+    user = relationship("User", back_populates="asha_worker_profile", foreign_keys=[user_id])

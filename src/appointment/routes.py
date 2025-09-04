@@ -1,55 +1,127 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session, joinedload
 from typing import List
+import datetime
 
-from .. import db  # This line is now corrected to match your filename
+# --- Module Imports ---
+from .. import db
 from . import schemas
-from . import models
+from . import models as appointment_models
+from ..auth import models as auth_models
+from ..profiles import models as profile_models
+from ..auth.dependencies import role_checker
 
-# Create the router
 router = APIRouter()
 
-# Dependency for getting a database session
-def get_db():
-    db_session = db.SessionLocal()
-    try:
-        yield db_session
-    finally:
-        db_session.close()
 
-@router.post("/", response_model=schemas.Appointment)
-def create_appointment_slot(appointment: schemas.AppointmentCreate, db: Session = Depends(get_db)):
+# --- Endpoints ---
+
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Appointment)
+def create_appointment_slot(
+    appointment_in: schemas.AppointmentCreate,
+    db: Session = Depends(db.get_db),
+    current_user: auth_models.User = Depends(role_checker(allowed_roles=["doctor"]))
+):
     """
-    Endpoint for a doctor to create a new, available appointment slot.
+    Creates a new, available appointment slot.
+
+    - **Security**: This endpoint is protected and only accessible by users with the 'doctor' role.
+    - The `doctor_id` is automatically assigned based on the logged-in doctor's token.
+    - The request body should contain the desired date and time for the slot.
     """
-    new_appointment = models.Appointment(**appointment.dict())
+    appointment_datetime = datetime.datetime.combine(
+        appointment_in.appointment_date, 
+        appointment_in.appointment_time
+    )
+
+    new_appointment = appointment_models.Appointment(
+        appointment_datetime=appointment_datetime,
+        doctor=current_user.doctor_profile
+    )
     db.add(new_appointment)
     db.commit()
     db.refresh(new_appointment)
-    return new_appointment
 
-@router.get("/doctor/{doctor_id}/available", response_model=List[schemas.Appointment])
-def get_available_slots(doctor_id: int, db: Session = Depends(get_db)):
+    # Re-fetch the object with all relationships eagerly loaded to ensure a complete response
+    created_appointment = db.query(appointment_models.Appointment).options(
+        joinedload(appointment_models.Appointment.doctor).joinedload(profile_models.Doctor.user)
+    ).filter(appointment_models.Appointment.id == new_appointment.id).first()
+    
+    return created_appointment
+
+
+@router.get("/available", response_model=List[schemas.Appointment])
+def get_all_available_slots(db: Session = Depends(db.get_db)):
     """
-    Endpoint for a patient to see all available slots for a specific doctor.
+    Fetches a list of all appointment slots that are currently 'available'.
+
+    - This is a public endpoint accessible by any user.
     """
-    appointments = db.query(models.Appointment).filter(
-        models.Appointment.doctor_id == doctor_id,
-        models.Appointment.status == "available"
+    appointments = db.query(appointment_models.Appointment).options(
+        joinedload(appointment_models.Appointment.doctor).joinedload(profile_models.Doctor.user),
+        joinedload(appointment_models.Appointment.patient).joinedload(profile_models.Patient.user)
+    ).filter(
+        appointment_models.Appointment.status == "available"
     ).all()
     return appointments
 
-# Note: For the 'book' endpoint, let's create a simple schema for the request body
-# Add this class to your src/appointment/schemas.py file
-# class AppointmentBook(BaseModel):
-#     patient_id: int
+
+@router.get("/doctor/me", response_model=List[schemas.Appointment])
+def get_my_doctor_appointments(
+    db: Session = Depends(db.get_db),
+    current_user: auth_models.User = Depends(role_checker(allowed_roles=["doctor"]))
+):
+    """
+    Fetches all appointments (available, booked, etc.) for the currently logged-in doctor.
+    
+    - **Security**: Protected endpoint for 'doctor' roles only.
+    """
+    appointments = db.query(appointment_models.Appointment).options(
+        joinedload(appointment_models.Appointment.doctor).joinedload(profile_models.Doctor.user),
+        joinedload(appointment_models.Appointment.patient).joinedload(profile_models.Patient.user)
+    ).filter(
+        appointment_models.Appointment.doctor_profile_id == current_user.doctor_profile.doctor_id
+    ).all()
+    return appointments
+
+
+@router.get("/patient/me", response_model=List[schemas.Appointment])
+def get_my_patient_appointments(
+    db: Session = Depends(db.get_db),
+    current_user: auth_models.User = Depends(role_checker(allowed_roles=["patient", "asha_worker"]))
+):
+    """
+    Fetches all appointments for the currently logged-in patient.
+
+    - **Security**: Protected endpoint for 'patient' and 'asha_worker' roles.
+    """
+    appointments = db.query(appointment_models.Appointment).options(
+        joinedload(appointment_models.Appointment.doctor).joinedload(profile_models.Doctor.user),
+        joinedload(appointment_models.Appointment.patient).joinedload(profile_models.Patient.user)
+    ).filter(
+        appointment_models.Appointment.patient_profile_id == current_user.patient_profile.patient_id
+    ).all()
+    return appointments
+
 
 @router.post("/{appointment_id}/book", response_model=schemas.Appointment)
-def book_appointment_slot(appointment_id: int, patient_id: int, db: Session = Depends(get_db)):
+def book_appointment_slot(
+    appointment_id: int,
+    db: Session = Depends(db.get_db),
+    current_user: auth_models.User = Depends(role_checker(allowed_roles=["patient", "asha_worker"]))
+):
     """
-    Endpoint for a patient to book a specific, available appointment slot.
+    Books an available appointment slot for the currently logged-in patient.
+
+    - **Security**: Protected endpoint for 'patient' and 'asha_worker' roles.
+    - The `patient_id` is automatically assigned based on the logged-in user's token.
     """
-    appointment_to_book = db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first()
+    # Eagerly load the relationships for the response
+    appointment_to_book = db.query(appointment_models.Appointment).options(
+        joinedload(appointment_models.Appointment.doctor).joinedload(profile_models.Doctor.user)
+    ).filter(
+        appointment_models.Appointment.id == appointment_id
+    ).first()
     
     if not appointment_to_book:
         raise HTTPException(status_code=404, detail="Appointment slot not found")
@@ -57,8 +129,9 @@ def book_appointment_slot(appointment_id: int, patient_id: int, db: Session = De
     if appointment_to_book.status != "available":
         raise HTTPException(status_code=400, detail="Appointment slot is already booked")
         
-    appointment_to_book.patient_id = patient_id
+    appointment_to_book.patient_profile_id = current_user.patient_profile.patient_id
     appointment_to_book.status = "booked"
     db.commit()
     db.refresh(appointment_to_book)
+    
     return appointment_to_book

@@ -1,23 +1,33 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import datetime
+from ..profiles.schemas import Doctor, Patient # Import full profile schemas for richer responses
 
-# 1. Base Schema
+# --- Base and Create Schemas ---
+
 class AppointmentBase(BaseModel):
-    doctor_id: int
-    appointment_datetime: datetime.datetime
-
-# 2. Schema for Creating Data
-class AppointmentCreate(AppointmentBase):
-    pass
-
-# 3. Schema for Reading Data
-class Appointment(AppointmentBase):
-    id: int
-    patient_id: int | None = None
-    status: str
-
-class AppointmentBook(BaseModel):
-    patient_id: int
+    # Base schema no longer needs any fields as they are context-dependent
 
     class Config:
         from_attributes = True
+
+class AppointmentCreate(AppointmentBase):
+    """Schema for creating a slot. Doctor ID is taken from the token."""
+    appointment_date: datetime.date
+    appointment_time: datetime.time
+
+class AppointmentUpdate(AppointmentBase):
+    """Schema for updating an appointment's status."""
+    status: str
+
+
+# --- Read Schemas (for API Responses) ---
+
+class Appointment(AppointmentBase):
+    """The full appointment schema for API responses."""
+    appointment_id: int = Field(alias="id") # Renamed 'id' to 'appointment_id'
+    appointment_datetime: datetime.datetime
+    status: str
+    
+    # Nest the full profile information in the response for convenience
+    doctor: Doctor | None = None
+    patient: Patient | None = None

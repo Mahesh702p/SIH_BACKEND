@@ -1,75 +1,65 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordRequestForm
 
 from .. import db, utils
 from . import schemas, models
 from ..profiles import models as profile_models
-from ..profiles import schemas as profile_schemas
 
 router = APIRouter()
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED, response_model=schemas.User)
 def signup(user: schemas.UserCreate, db: Session = Depends(db.get_db)):
-    # 1. Check if user already exists
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="Username already exists"
         )
 
-    # 2. Hash the password
     hashed_password = utils.hash_password(user.password)
     
-    # 3. Determine role from email domain
-    email_domain = user.email.split('@')[-1]
-    role = "patient" # Default role
-    if email_domain == "doctor.com":
-        role = "doctor"
-    elif email_domain == "pharmacist.com":
-        role = "pharmacist"
-    elif email_domain == "asha.com":
-        role = "asha_worker"
-
-    # 4. Create the main user entry
-    new_user = models.User(email=user.email, hashed_password=hashed_password, role=role)
+    new_user = models.User(
+        username=user.username,
+        hashed_password=hashed_password,
+        role=user.role,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        birthdate=user.birthdate,
+        gender=user.gender
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # 5. Create the specific profile entry based on the role
-    if role == "doctor":
-        profile_data = profile_schemas.DoctorCreate(full_name=user.full_name)
-        new_profile = profile_models.Doctor(**profile_data.dict(), user_id=new_user.id)
-    elif role == "pharmacist":
-        profile_data = profile_schemas.PharmacistCreate(full_name=user.full_name)
-        new_profile = profile_models.Pharmacist(**profile_data.dict(), user_id=new_user.id)
-    elif role == "asha_worker":
-        profile_data = profile_schemas.ASHAWorkerCreate(full_name=user.full_name)
-        new_profile = profile_models.ASHAWorker(**profile_data.dict(), user_id=new_user.id)
+    # Create the specific profile entry
+    if user.role == "doctor":
+        new_profile = profile_models.Doctor(user_id=new_user.id)
+    elif user.role == "pharmacist":
+        new_profile = profile_models.Pharmacist(user_id=new_user.id)
+    elif user.role == "asha_worker":
+        new_profile = profile_models.ASHAWorker(user_id=new_user.id)
     else: # Default to patient
-        profile_data = profile_schemas.PatientCreate(full_name=user.full_name)
-        new_profile = profile_models.Patient(**profile_data.dict(), user_id=new_user.id)
+        new_profile = profile_models.Patient(user_id=new_user.id)
 
     db.add(new_profile)
     db.commit()
     
     return new_user
 
-@router.post("/login")
-def login(user_credentials: schemas.UserLogin, db: Session = Depends(db.get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
+@router.post("/login", response_model=schemas.Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(db.get_db)):
+    user = db.query(models.User).filter(models.User.username == form_data.username).first()
     
-    if not db_user:
+    if not user or not utils.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
         
-    if not utils.verify_password(user_credentials.password, db_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials"
-        )
-
-    # In a production app, you would create and return a JWT token here.
-    # For the demo, a simple success message is sufficient.
-    return {"status": "success", "user_id": db_user.id, "role": db_user.role}
+    access_token = utils.create_access_token(
+        data={"sub": user.username, "role": user.role}
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"}

@@ -1,29 +1,45 @@
-from pydantic import BaseModel
-from ..profiles.schemas import Patient, Doctor, Pharmacist, ASHAWorker
+from pydantic import BaseModel, Field
+import datetime
 
-# This is the schema for creating a new user during sign-up
-class UserCreate(BaseModel):
-    email: str
+# --- Token Schemas ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: str | None = None
+    role: str | None = None
+
+# --- User Schemas ---
+class UserBase(BaseModel):
+    username: str
+    first_name: str
+    last_name: str
+    birthdate: datetime.date
+    gender: str
+
+class UserCreate(UserBase):
     password: str
-    full_name: str
+    role: str # User now provides their role during signup
 
-# This is the schema for the data sent during a login attempt
+class User(UserBase):
+    user_id: int = Field(alias="id")
+    role: str
+
+    class Config:
+        from_attributes = True
+
 class UserLogin(BaseModel):
-    email: str
+    username: str
     password: str
 
-# This is the main schema for returning user data from the API
-class User(BaseModel):
-    id: int
+class UserInDBBase(BaseModel):
+    user_id: int = Field(alias="id")
+    first_name: str
+    last_name: str
+    username: str
     email: str
     role: str
-    
-    # These optional fields will hold the nested profile data.
-    # A user will only have one of these profiles populated.
-    patient_profile: Patient | None = None
-    doctor_profile: Doctor | None = None
-    pharmacist_profile: Pharmacist | None = None
-    asha_worker_profile: ASHAWorker | None = None
 
     class Config:
         from_attributes = True
