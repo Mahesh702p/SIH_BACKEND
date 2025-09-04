@@ -1,0 +1,102 @@
+SIH 2025: Telemedicine Platform API Blueprint
+Core API Information
+● Base URL: https://your-app-name.onrender.com
+● Live Interactive Docs (Swagger UI): https://your-app-name.onrender.com/docs
+1. Authentication (All Users)
+Handles registration and login for all user roles.
+● Feature: Register a new user account.
+○ Endpoint: POST /auth/signup
+○ Security: Public
+○ Status: [✅ Done]
+● Feature: Log in to an existing user account to receive a JWT access token.
+○ Endpoint: POST /auth/login
+○ Security: Public
+○ Status: [✅ Done]
+2. Patient-Facing Features
+Endpoints for actions a logged-in patient can take.
+● Feature: View all available appointment slots from all doctors.
+○ Endpoint: GET /appointments/available
+○ Security: Requires Authentication
+○ Status: [✅ Done]
+● Feature: Book an available appointment slot.
+○ Endpoint: POST /appointments/{appointment_id}/book
+○ Security: Role: Patient or ASHA Worker
+○ Status: [✅ Done]
+● Feature: View their own list of upcoming and past appointments.
+○ Endpoint: GET /appointments/patient/me
+○ Security: Role: Patient or ASHA Worker
+○ Status: [✅ Done]
+● Feature: View a list of all their prescriptions.
+○ Endpoint: GET /prescriptions/me
+○ Security: Role: Patient or ASHA Worker
+○ Status: [🚧 To Be Built]
+● Feature: View a list of all registered pharmacies.
+○ Endpoint: GET /pharmacies/
+○ Security: Public
+○ Status: [✅ Done]
+● Feature: View the medicine inventory of a specific pharmacy.
+○ Endpoint: GET /pharmacies/{pharmacy_id}/medicines
+○ Security: Public
+○ Status: [✅ Done]
+● Feature: Use the AI Symptom Checker.
+○ Endpoint: POST /symptom-checker/check
+○ Security: Requires Authentication
+○ Status: [🚧 To Be Built]
+3. Doctor-Facing Features
+Endpoints for actions a logged-in doctor can take.
+● Feature: Create a new, available appointment slot.
+○ Endpoint: POST /appointments/
+○ Security: Role: Doctor
+○ Status: [✅ Done]
+● Feature: View all of their own appointments.
+○ Endpoint: GET /appointments/doctor/me
+○ Security: Role: Doctor
+○ Status: [✅ Done]
+● Feature: Initiate a video call session for an appointment.
+○ Endpoint: POST /appointments/{appointment_id}/start-call
+○ Security: Role: Doctor
+○ Status: [🚧 To Be Built]
+● Feature: Update an appointment's status (e.g., to "completed").
+○ Endpoint: PATCH /appointments/{appointment_id}
+○ Security: Role: Doctor
+○ Status: [🚧 To Be Built]
+● Feature: Create a digital prescription for a patient.
+○ Endpoint: POST /prescriptions/
+○ Security: Role: Doctor
+○ Status: [🚧 To Be Built]
+4. ASHA Worker-Facing Features
+Special endpoints for a logged-in ASHA worker.
+● Feature: View a list of all patients they manage.
+○ Endpoint: GET /asha/me/patients
+○ Security: Role: ASHA Worker
+○ Status: [✅ Done]
+● Feature: Create a new patient profile (Assisted Onboarding).
+○ Endpoint: POST /asha/onboard-patient
+○ Security: Role: ASHA Worker
+○ Status: [✅ Done]
+● Feature: Book an appointment on behalf of a managed patient.
+○ Endpoint: POST /asha/book-for-patient
+○ Security: Role: ASHA Worker
+○ Status: [🚧 To Be Built]
+● Feature: Log a field data event (e.g., home visit).
+○ Endpoint: POST /asha/field-data-logs
+○ Security: Role: ASHA Worker
+○ Status: [🚧 To Be Built]
+5. Pharmacist-Facing Features
+Endpoints for actions a logged-in pharmacist can take.
+● Feature: Create a new pharmacy profile.
+○ Endpoint: POST /pharmacies/
+○ Security: Role: Pharmacist
+○ Status: [✅ Done]
+● Feature: View the details of the pharmacy they manage.
+○ Endpoint: GET /pharmacies/pharmacist/me
+○ Security: Role: Pharmacist
+○ Status: [✅ Done]
+● Feature: Add a new medicine to their inventory.
+○ Endpoint: POST /pharmacies/{pharmacy_id}/medicines
+○ Security: Role: Pharmacist (with ownership check)
+○ Status: [✅ Done]
+● Feature: Update the stock quantity of a medicine.
+○ Endpoint: PUT /medicines/{medicine_id}
+○ Security: Role: Pharmacist (with ownership check)
+○ Status: [✅ Done]

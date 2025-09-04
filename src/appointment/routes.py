@@ -148,3 +148,42 @@ def book_appointment_slot(
     db.refresh(appointment_to_book)
     
     return appointment_to_book
+
+
+@router.patch("/{appointment_id}", response_model=schemas.Appointment)
+def update_appointment_status(
+    appointment_id: int,
+    update_in: schemas.AppointmentUpdate,
+    db: Session = Depends(db.get_db),
+    current_user: auth_models.User = Depends(role_checker(allowed_roles=["doctor"]))
+):
+    """
+    Doctor updates appointment status (e.g., 'completed', 'cancelled').
+    """
+    appt = db.query(appointment_models.Appointment).filter(appointment_models.Appointment.id == appointment_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    if appt.doctor_profile_id != current_user.doctor_profile.doctor_id:
+        raise HTTPException(status_code=403, detail="Not your appointment")
+    appt.status = update_in.status
+    db.commit(); db.refresh(appt)
+    return appt
+
+
+@router.post("/{appointment_id}/start-call")
+def start_call(
+    appointment_id: int,
+    db: Session = Depends(db.get_db),
+    current_user: auth_models.User = Depends(role_checker(allowed_roles=["doctor"]))
+):
+    """
+    Creates/returns a channel name for video consultation for this appointment.
+    For simplicity, reuse appointment id as channel.
+    """
+    appt = db.query(appointment_models.Appointment).filter(appointment_models.Appointment.id == appointment_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    if appt.doctor_profile_id != current_user.doctor_profile.doctor_id:
+        raise HTTPException(status_code=403, detail="Not your appointment")
+    channel = f"appointment-{appointment_id}"
+    return {"channel": channel}

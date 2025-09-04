@@ -1,0 +1,188 @@
+Problem Statement : Smart Healthcare Solution for Underserved Rural
+Communities
+Topic Info (Summary):
+The rural population around Nabha, Punjab, faces a severe healthcare crisis due to understaffed hospitals, long
+travel distances, and a lack of real-time information. Patients from 173 villages often travel for hours, losing daily
+wages, only to find that specialists or essential medicines are unavailable. This project aims to create a
+mobile-first digital health platform to bridge this gap, specifically designed to function effectively in areas with
+poor internet connectivity.
+What They Are Expecting:
+The goal is to develop a comprehensive digital solution that addresses the primary healthcare accessibility
+issues in rural Nabha. They expect:
+● A user-friendly, multilingual telemedicine application for remote video consultations.
+● A system for creating and managing digital health records that patients can access even without an active
+internet connection.
+● A feature that provides real-time information on medicine stock at nearby pharmacies to avoid wasted
+trips.
+● An intelligent symptom checker that works efficiently on low-bandwidth networks to provide preliminary
+guidance.
+● An architectural design that is robust and scalable, allowing it to be deployed in other rural regions facing
+similar challenges.
+Compulsory Features:
+● User Authentication & Profiles: Separate, secure login and profile management for Patients, Doctors,
+and Pharmacists.
+● Multilingual Interface: The UI must support at least Punjabi, Hindi, and English to cater to the local
+demographic.
+● Appointment Booking System: An intuitive calendar-based system for patients to book slots with
+available doctors.
+● Video Consultation Module: A stable, low-latency video calling feature integrated within the app.
+● Offline-First Digital Health Records: Patients must be able to view their medical history, prescriptions,
+and test reports without an internet connection.
+● AI Symptom Checker: A guided, questionnaire-based tool for preliminary diagnosis that sends a concise
+report to the doctor.
+● Pharmacy Inventory Management: A simple interface for local pharmacists to update their medicine
+stock, which is then visible to patients.
+Extra Stand-Out Features (Innovation Layer):
+● 󰟻 Community Health Worker (ASHA) Module: A dedicated interface for ASHA workers to manage
+appointments, update health records, and conduct assisted consultations for non-tech-savvy patients in
+their villages. This bridges the last-mile gap.
+● 📞 IVR & SMS Integration: An automated Interactive Voice Response (IVR) system and SMS alerts for
+users without smartphones. Patients could call a number to book appointments, check medicine
+availability, or receive prescription reminders via SMS.
+● 🗣 Voice-Enabled Commands: Integrate voice commands in local languages (e.g., "Show my last
+prescription") to improve accessibility for users with low literacy.
+● 📈 Predictive Outbreak Alerts: Anonymously analyze symptom checker data at a community level to
+identify patterns and alert health authorities about potential disease outbreaks (e.g., a spike in flu-like
+symptoms in a specific cluster of villages).
+● 💊 Medicine Delivery Logistics: Integrate with a local delivery network or volunteers to facilitate medicine
+delivery for elderly or critically ill patients.
+Non-Negotiable Best Features (Must-Haves at Any Cost):
+1. Offline-First Digital Health Records: The entire solution is impractical without this feature, given that
+only 31% of households have internet. If patients cannot access their records offline, the app fails its
+primary users.
+2. Stable, Low-Bandwidth Telemedicine: The core value proposition is connecting patients to doctors. The
+video consultation must be optimized to work reliably on 2G/3G networks, otherwise, it's unusable.
+3. Real-time Pharmacy Inventory: This directly solves a key pain point mentioned in the problem statement.
+Without this feature, patients will still waste time and money traveling, undermining the app's utility.
+Most Difficult Part of the Project
+The toughest challenge will be implementing the offline-first data synchronization for digital health
+records.
+● Why it's difficult: Ensuring data consistency, integrity, and security across devices that are frequently
+offline is complex. You need to handle data conflicts (e.g., a doctor updates a record online while the
+patient's app is offline) and manage the synchronization of potentially large files (like medical scans) over
+unstable, low-speed networks without draining the user's battery or data plan. Building a robust sync
+engine from scratch is not feasible in a hackathon.
+● How to tackle it smartly:
+○ Leverage Existing Frameworks: Do not reinvent the wheel. Use technologies designed for this exact
+problem. For the MVP, Firebase's Firestore offers excellent built-in offline persistence and data
+synchronization capabilities out of the box. For a more advanced solution, consider libraries like
+WatermelonDB or PouchDB.
+○ Prioritize Data: During the hackathon, focus on syncing critical text-based data (prescriptions,
+doctor's notes, patient info) first.
+○ Smart Sync Strategy: Implement a "sync on Wi-Fi" or "sync on-demand" option for larger data like
+images or lab reports to conserve mobile data.
+○ Simplified Conflict Resolution: For the MVP, adopt a simple "last write wins" strategy to handle data
+conflicts and mention more sophisticated strategies (like Operational Transformation) as part of the
+future roadmap.
+Tech Stack (Optimized for Hackathon):
+Component MVP (Hackathon)
+Recommendation
+Why It's Good for a
+Hackathon
+Production /
+Scalable Alternative
+Frontend (Mobile
+App)
+Flutter Single codebase
+for Android & iOS,
+fast UI
+development with a
+rich widget library,
+great performance.
+Flutter (remains an
+excellent and
+scalable choice).
+Backend Firebase (BaaS) Eliminates backend
+setup; provides
+auth, database,
+and serverless
+functions in one
+package, saving
+immense time.
+Node.js
+(Express.js) or
+Python (FastAPI)
+for more control
+and custom logic.
+Database Cloud Firestore Its core feature of
+real-time sync and
+powerful offline
+data persistence is
+perfect for the
+project's main
+challenge.
+A hybrid model:
+PostgreSQL for
+structured data
+(users,
+appointments) &
+MongoDB for
+documents (health
+records).
+AI Symptom
+Checker
+Firebase Cloud
+Function
+Easy to deploy a
+simple, serverless
+decision-tree API
+without managing
+servers or complex
+model training.
+TensorFlow Lite to
+run a lightweight,
+trained model
+directly on the
+user's device for
+true offline
+functionality.
+Video
+Consultation
+Agora API / Twilio
+API
+Robust, pre-built
+WebRTC solution
+that handles
+low-bandwidth
+Agora or Twilio
+(These APIs are
+built for scale and
+remain the best
+scenarios well.
+Avoids complex
+setup.
+professional
+choice).
+Deployment &
+Hosting
+Firebase Hosting /
+Vercel
+Simple,
+one-command
+deployment
+integrated directly
+with the
+development
+workflow.
+Major Cloud
+Providers like AWS,
+Google Cloud
+Platform (GCP), or
+Azure for robust
+infrastructure.
+Bonus: Presentation & Demonstration Tips
+1. Tell a Compelling Story: Start your pitch with a persona. "Meet Balwinder, a farmer from a village near
+Nabha. He loses a day's wage of ₹400 every time he travels to the hospital..." This makes the problem
+relatable and personal.
+2. The "Magic Trick" Demo: The most impactful moment will be demonstrating the offline feature. Open the
+app, show the health records, then turn off the Wi-Fi and mobile data on the presentation device. Navigate
+the app and show that the records are still accessible. This will be your "wow" moment.
+3. Showcase the Multilingual UI: During the demo, switch the app's language from English to Punjabi live on
+screen. This proves you have built for the actual user and not just as an afterthought.
+4. Role-Play the User Journey: Have one team member act as the patient using the app, another as the
+doctor on a web dashboard, and a third as the pharmacist. Walk the judges through a complete cycle:
+booking, consultation, prescription generation, and checking medicine availability.
+5. Highlight the Business & Social Impact: End with a strong slide showing the impact. Use the data
+provided: "Our solution serves 173 villages, saving thousands in lost wages and travel costs, and directly
+improving health outcomes for a large underserved population." Emphasize the scalability of your
+architecture.

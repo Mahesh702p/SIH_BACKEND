@@ -8,10 +8,7 @@ from . import models as pharmacy_models
 from ..auth import models as auth_models
 from ..auth.dependencies import role_checker
 
-router = APIRouter(
-    prefix="/pharmacies",
-    tags=["Pharmacies"]
-)
+router = APIRouter()
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Pharmacy)
 def create_pharmacy(
@@ -79,6 +76,14 @@ def get_my_pharmacies(
     pharmacies = db.query(pharmacy_models.Pharmacy).filter(
         pharmacy_models.Pharmacy.pharmacist_id == current_user.pharmacist_profile.pharmacist_id
     ).all()
+    return pharmacies
+
+@router.get("/", response_model=List[schemas.Pharmacy])
+def list_all_pharmacies(db: Session = Depends(db.get_db)):
+    """
+    Public endpoint: list all pharmacies.
+    """
+    pharmacies = db.query(pharmacy_models.Pharmacy).all()
     return pharmacies
 
 
